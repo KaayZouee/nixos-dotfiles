@@ -27,6 +27,8 @@ alias czshrc='nano ~/.zshrc'
 alias sober='flatpak run org.vinegarhq.Sober'
 export XCURSOR_THEME=Fuchsia
 export XCURSOR_SIZE=24
-
+export GTK_IM_MODULE=ibus
+export XMODIFIERS=@im=ibus
+export QT_IM_MODULE=ibus
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
