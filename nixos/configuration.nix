@@ -1,3 +1,4 @@
+
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
@@ -9,37 +10,111 @@
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
     ];
+  
+
+  xdg.portal.enable = true;
+  # For flatpak.
+  xdg.portal = {
+  extraPortals = with pkgs; [
+    xdg-desktop-portal-gtk
+  ];
+};
+environment.variables = {
+  GTK_IM_MODULE = "fcitx";
+  QT_IM_MODULE = "fcitx";
+  XMODIFIERS = "@im=fcitx";
+};
+
+i18n.inputMethod = {
+  enable = true;
+  type = "fcitx5";
+  fcitx5.addons = with pkgs; [
+    fcitx5-unikey
+  ];
+};
+
 
   nix = {
     package = pkgs.nixVersions.stable; # optional, but includes latest nix features
     extraOptions = ''
-      experimental-features = nix-command
+      experimental-features = nix-command  flakes
     '';
   };
 
-  programs.hyprland = {
-    enable = true;
-    xwayland.enable = true; # For X11 apps
+
+hardware.bluetooth = {
+  enable = true;
+  powerOnBoot = true;
+  settings = {
+    General = {
+      Experimental = true; # Show battery charge of Bluetooth devices
+    };
+  };
 };
+
+services.blueman.enable = true;
+
+services.ratbagd.enable = true;
+
+hardware.logitech.wireless.enable = true;
+
+
+
+
+
+
+#  programs.hyprland = {
+#    enable = true;
+#    xwayland.enable = true; # For X11 apps
+#};
 
   hardware.graphics.enable = true;
 
 
   networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
+  
+
+users.groups.vboxusers = {};
+
 
   services.power-profiles-daemon.enable = true;
 
-i18n.inputMethod = {
-  type = "ibus";
-  enable = true;
-  ibus.engines = with pkgs.ibus-engines; [
-    bamboo
-  ];
-};
+#i18n.inputMethod = {
+#  type = "ibus";
+#  enable = true;
+#  ibus.engines = with pkgs.ibus-engines; [
+#    bamboo
+#  ];
+#};
+
+
+
+
+#########################
+###  VIRTUALIZATION   ###
+#########################
+
+# VirtualBox host
+#   virtualisation.virtualbox.host.enable = true;
+#
+#   users.extraGroups.vboxusers.members = [ "user-with-access-to-virtualbox" ];
+
+
+
+  virtualisation.libvirtd = {
+    enable = true;
+    qemu = {
+      swtpm.enable = true;     # Optional: TPM support
+      ovmf.enable = true;      # UEFI support
+    };
+  };
+
+  # Optional SPICE agent for better VM interaction
+  services.spice-vdagentd.enable = false;
 
 
   programs.zsh.enable = true;
-  programs.zsh.ohMyZsh.enable = true; # Oh My Zsh support
+#  programs.zsh.ohMyZsh.enable = true; # Oh My Zsh support
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -52,23 +127,36 @@ i18n.inputMethod = {
   # Use latest kernel.
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  networking.hostName = "nixos"; # Define your hostname.
+  networking.hostName = "iusenixbtw"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
+
+
+
+
+
+
   # Enable networking
   networking.networkmanager.enable = true;
+  systemd.services.resolvconf.enable = false;
+  networking.dhcpcd.enable = false;
+
+
+
+
+
+
 
   # Set your time zone.
   time.timeZone = "Asia/Ho_Chi_Minh";
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
-
-  i18n.extraLocaleSettings = {
+    i18n.extraLocaleSettings = {
     LC_ADDRESS = "vi_VN";
     LC_IDENTIFICATION = "vi_VN";
     LC_MEASUREMENT = "vi_VN";
@@ -86,6 +174,11 @@ i18n.inputMethod = {
   # Enable the XFCE Desktop Environment.
   services.xserver.displayManager.lightdm.enable = true;
   services.xserver.desktopManager.xfce.enable = true;
+
+  #keyboard backlit (asus vivobook laptop)
+  boot.kernelModules = [ "asus-nb-wmi" ];
+
+
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -113,13 +206,14 @@ i18n.inputMethod = {
   };
 
   # Enable touchpad support (enabled default in most desktopManager).
-  # services.xserver.libinput.enable = true;
+#   services.xserver.libinput.enable = true;
+
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.kay = {
     isNormalUser = true;
     description = "kay";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "vboxusers" "libvirtd" ];
     shell = pkgs.zsh;    
     packages = with pkgs; [
     #  thunderbird
@@ -127,7 +221,10 @@ i18n.inputMethod = {
   };
 
 #fonts.packages = with pkgs; [
-#  nerd-fonts.meslo-lg
+#  nerd-fonts.fira-code
+#  fira-code
+#  fira
+#  font-awesome
 #];
 
 
@@ -137,6 +234,11 @@ fonts = {
     nerd-fonts.meslo-lg
     noto-fonts
     noto-fonts-emoji
+    nerd-fonts.fira-code
+    fira-code
+    fira
+    font-awesome
+
   ];
 };
 
@@ -153,33 +255,60 @@ services.flatpak.enable = true;
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    neovim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    neovim
+    vscodium
+    fcitx5
+    fcitx5-configtool
+    fcitx5-unikey
+    pkgs.libsForQt5.fcitx5-unikey
+    vim-full
+    curl
+    fish
     cargo
-    rustup
     go
     fd
     ripgrep
     sqlite
     gcc
     xclip
+    protonvpn-gui
     wl-clipboard
+    cliphist
+#    bluez
+#    inotify-tools
+#    trash-cli
+#    foot
+#    socat
+    imagemagick
     nodejs
     fd
     wget
     stow
     git
+    blueman
+    piper
     pkgs.fastfetch
     btop
-    waybar
-    hyprland
-    hyprpaper
-    hyprlock
-    wofi
+    cava
+#    waybar
+#    
+#hyprland
+#    hyprpaper
+#    hyprlock
+#    wofi
+#    rofi-wayland
+    dunst
+    xfce.thunar
+    jq
+    wireplumber
     mako
     grim slurp
     wl-clipboard
-    xdg-desktop-portal-hyprland
-    kitty
+#    xdg-desktop-portal-hyprland
+#    xdg-desktop-portal-gtk
+#    hyprpicker
+#    hypridle    
+#    kitty
     networkmanagerapplet
     brightnessctl
     pipewire
@@ -187,17 +316,28 @@ services.flatpak.enable = true;
     noto-fonts noto-fonts-emoji
     fontconfig
     spotify
-    spicetify-cli
-    wordpress
     unzip
     adwaita-icon-theme
     fuchsia-cursor
     wine
     flatpak
     zsh
-    zsh-powerlevel10k
-    ibus-engines.bamboo
-    ibus
+    qemu
+    virt-manager
+    virt-viewer
+    swtpm
+    gimp
+    memos
+    kiwix
+    xclip
+    ast-grep
+    lazygit
+    fzf
+    python313
+    python313Packages.pynvim
+    python313Packages.pip
+    lua51Packages.lua
+
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -217,7 +357,7 @@ services.flatpak.enable = true;
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
-   networking.firewall.enable = false;
+   networking.firewall.enable = true;
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
